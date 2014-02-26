@@ -1,8 +1,8 @@
+#include "portnotify.h"
+
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
-#include <stdio.h>
-#include <stdint.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <assert.h>
@@ -12,7 +12,7 @@ static const unsigned PORT_OFF = 15;
 static const unsigned REM_ADDR_OFF = 20;
 static const unsigned MAX_LINES = 200;
 
-ssize_t get_lines(int cnt, char *buf){
+static ssize_t get_lines(int cnt, char *buf){
   ssize_t num_read;
   int fd = open("/proc/net/tcp", O_RDONLY);
   num_read = read(fd, buf, cnt*LINE_LEN);
@@ -22,15 +22,15 @@ ssize_t get_lines(int cnt, char *buf){
   return num_read/LINE_LEN;
 }
 
-uint16_t get_port(char *line){
+static uint16_t get_port(char *line){
   return (uint16_t) strtoul(line+PORT_OFF, NULL, 16);
 }
 
-int rem_addr_is_set(char *line){
+static int rem_addr_is_set(char *line){
   return line[REM_ADDR_OFF] != '0' || line[REM_ADDR_OFF+1] != '0';
 }
 
-uint16_t find_new_port(char *lines, int cnt, uint16_t *old_ports){
+static uint16_t find_new_port(char *lines, int cnt, uint16_t *old_ports){
   char *cmp;
   int mid = ((cnt+1)/2)-1;
 
@@ -46,7 +46,7 @@ uint16_t find_new_port(char *lines, int cnt, uint16_t *old_ports){
   }
 }
 
-int main(){
+uint16_t port_notify(){
   char buf[LINE_LEN * MAX_LINES + 1];
   uint16_t *port_list;
   char *line;
@@ -77,10 +77,7 @@ int main(){
     if(rem_addr_is_set(line)){
       continue;
     }
-    printf("New port: %hu\n", find_new_port(buf+LINE_LEN, port_cnt+1, port_list));
-    break;
+    return find_new_port(buf+LINE_LEN, port_cnt+1, port_list);
   }
-
-  return 0;
 }
 
